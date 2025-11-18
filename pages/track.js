@@ -1,95 +1,72 @@
-<<<<<<< HEAD
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
-export default function TrackPage() {
-  const [order, setOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function Track() {
+    const [order, setOrder] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    const trackingId = url.searchParams.get("oid");
+    const trackingId =
+        typeof window !== "undefined"
+            ? new URLSearchParams(window.location.search).get("id")
+            : null;
 
-    if (!trackingId) return;
+    useEffect(() => {
+        if (!trackingId) return;
 
-    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    
-    fetch(`${SUPABASE_URL}/rest/v1/orders?public_tracking_id=eq.${trackingId}&select=*`, {
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`
-          }
+        const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/orders?public_tracking_id=eq.${trackingId}&select=*`;
+
+        fetch(url, {
+            headers: {
+                apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            }
         })
-    
-      .then(res => res.json())
-      .then(data => {
-        setOrder(data[0] || null);
-        setLoading(false);
-      });
-  }, []);
+            .then((res) => res.json())
+            .then((data) => {
+                setOrder(data[0] || null);
+                setLoading(false);
+            })
+            .catch(() => setLoading(false));
+    }, [trackingId]);
 
-  if (loading) return <p>Cargando...</p>;
-  if (!order) return <p>Orden no encontrada</p>;
+    if (!trackingId) {
+        return <div style={{ padding: 20 }}><h2>Falta el ID en la URL</h2></div>;
+    }
 
-  return (
-    <div style={{ padding: 20 }}>
-      <h1>Seguimiento de Orden</h1>
-      <h2>Orden #{order.id}</h2>
+    if (loading) return <div style={{ padding: 20 }}><h2>Cargando...</h2></div>;
+    if (!order) return <div style={{ padding: 20 }}><h2>Orden no encontrada</h2></div>;
 
-      <p><strong>Cliente:</strong> {order.customer.firstName} {order.customer.lastName}</p>
-      <p><strong>Equipo:</strong> {order.device.brand} {order.device.model}</p>
-      <p><strong>Estado:</strong> {order.status}</p>
+    return (
+        <div style={{ padding: 20 }}>
+            <h1>Seguimiento de Reparación</h1>
+            <h2>Orden #{order.id}</h2>
 
-      <h3>Fotos del Equipo</h3>
-      {(order.photos || []).map((url) => (
-        <img key={url} src={url} width="150" style={{ margin: 10 }} />
-      ))}
-    </div>
-  );
+            <p><strong>Cliente:</strong> {order.customer?.firstName} {order.customer?.lastName}</p>
+            <p><strong>Teléfono:</strong> {order.customer?.phone}</p>
+
+            <h3>Datos del Equipo</h3>
+            <p><strong>Marca:</strong> {order.device?.brand}</p>
+            <p><strong>Modelo:</strong> {order.device?.model}</p>
+            <p><strong>Problema:</strong> {order.problemDescr}</p>
+
+            <h3>Estado actual</h3>
+            <p><strong>Status:</strong> {order.status}</p>
+
+            {order.photos && order.photos.length > 0 && (
+                <>
+                    <h3>Fotos del Equipo</h3>
+                    {order.photos.map((url, i) => (
+                        <img
+                            key={i}
+                            src={url}
+                            style={{ width: "100%", maxWidth: 300, marginBottom: 10, borderRadius: 8 }}
+                        />
+                    ))}
+                </>
+            )}
+
+            <p style={{ marginTop: 30, opacity: 0.6 }}>
+                Página generada por TallerControl ©
+            </p>
+        </div>
+    );
 }
-=======
-import { useEffect, useState } from "react";
-
-export default function TrackPage() {
-  const [order, setOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    const trackingId = url.searchParams.get("oid");
-
-    if (!trackingId) return;
-
-    fetch(`https://YOUR_SUPABASE_URL/rest/v1/orders?public_tracking_id=eq.${trackingId}&select=*`, {
-      headers: {
-        apikey: "YOUR_PUBLIC_ANON_KEY",
-        Authorization: "Bearer YOUR_PUBLIC_ANON_KEY"
-      }
-    })
-      .then(res => res.json())
-      .then(data => {
-        setOrder(data[0] || null);
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) return <p>Cargando...</p>;
-  if (!order) return <p>Orden no encontrada</p>;
-
-  return (
-    <div style={{ padding: 20 }}>
-      <h1>Seguimiento de Orden</h1>
-      <h2>Orden #{order.id}</h2>
-
-      <p><strong>Cliente:</strong> {order.customer.firstName} {order.customer.lastName}</p>
-      <p><strong>Equipo:</strong> {order.device.brand} {order.device.model}</p>
-      <p><strong>Estado:</strong> {order.status}</p>
-
-      <h3>Fotos del Equipo</h3>
-      {(order.photos || []).map((url) => (
-        <img key={url} src={url} width="150" style={{ margin: 10 }} />
-      ))}
-    </div>
-  );
-}
->>>>>>> f3440bb63c478ac66bb341a14b58167aa3ee01fb
