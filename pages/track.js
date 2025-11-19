@@ -19,7 +19,7 @@ export default function TrackPage() {
       try {
         const url =
           `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/orders` +
-          `?public_tracking_id=eq.${trackingId}&select=*`;
+          `?select=*&public_tracking_id=eq.${trackingId}`;
 
         const res = await fetch(url, {
           headers: {
@@ -29,11 +29,13 @@ export default function TrackPage() {
         });
 
         const data = await res.json();
+
         if (Array.isArray(data) && data.length > 0) {
           setOrder(data[0]);
         } else {
           setNotFound(true);
         }
+
       } catch (err) {
         console.error("Error fetching order:", err);
         setNotFound(true);
@@ -51,11 +53,22 @@ export default function TrackPage() {
   return (
     <div style={{ padding: 20 }}>
       <h1>Seguimiento de Orden #{order.id}</h1>
+
       <p><b>Estado:</b> {order.status}</p>
-      <p><b>Cliente:</b> {order.customer?.firstName} {order.customer?.lastName}</p>
-      <p><b>Dispositivo:</b> {order.device?.brand} {order.device?.model}</p>
-      <p><b>Fecha:</b> {order.createdAt}</p>
-      <p><b>Problema:</b> {order.problemDescription}</p>
+
+      <p>
+        <b>Cliente:</b>{" "}
+        {order.customer?.firstName} {order.customer?.lastName}
+      </p>
+
+      <p>
+        <b>Dispositivo:</b>{" "}
+        {order.device?.brand} {order.device?.model}
+      </p>
+
+      <p><b>Fecha:</b> {order.created_at}</p>
+
+      <p><b>Problema:</b> {order.problemDescrip}</p>
     </div>
   );
 }
