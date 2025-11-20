@@ -1,3 +1,20 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  background: #f0f2f5; /* Color base */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Esto crea el fondo degradado suave fijo detrás de todo */
+.premium-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at 50% 0%, #a7b5ff 0%, #f0f2f5 50%), 
+              radial-gradient(circle at 80% 20%, #d4dcfc 0%, transparent 50%);
+  z-index: -1;
+}
