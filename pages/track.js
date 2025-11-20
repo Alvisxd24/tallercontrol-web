@@ -1,74 +1,61 @@
-import { useEffect, useState } from "react";
+// pages/track.js
+import { useEffect, useState } from 'react';
 
 export default function TrackPage() {
-  const [order, setOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+    const [order, setOrder] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const trackingId = searchParams.get("id");
+    useEffect(() => {
+        const url = new URL(window.location.href);
+        const id = url.searchParams.get("id");
 
-    if (!trackingId) {
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
-
-    async function fetchOrder() {
-      try {
-        const url =
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/orders` +
-          `?select=*&public_tracking_id=eq.${trackingId}`;
-
-        const res = await fetch(url, {
-          headers: {
-            apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
-          }
-        });
-
-        const data = await res.json();
-
-        if (Array.isArray(data) && data.length > 0) {
-          setOrder(data[0]);
-        } else {
-          setNotFound(true);
+        if (!id) {
+            setError("No se proporcionó un ID de seguimiento.");
+            setLoading(false);
+            return;
         }
 
-      } catch (err) {
-        console.error("Error fetching order:", err);
-        setNotFound(true);
-      } finally {
-        setLoading(false);
-      }
-    }
+        console.log("ID recibido:", id);
 
-    fetchOrder();
-  }, []);
+        fetch(
+            `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/orders?public_tracking_id=eq.${id}&select=*`,
+            {
+                headers: {
+                    apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+                    Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
+                }
+            }
+        )
+            .then(res => res.json())
+            .then(data => {
+                console.log("Respuesta Supabase:", data);
 
-  if (loading) return <p>Cargando...</p>;
-  if (notFound) return <p>Orden no encontrada</p>;
+                if (data.length === 0) {
+                    setError("Orden no encontrada.");
+                } else {
+                    setOrder(data[0]);
+                }
 
-  return (
-    <div style={{ padding: 20 }}>
-      <h1>Seguimiento de Orden #{order.id}</h1>
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Error:", err);
+                setError("Error al conectar con Supabase");
+                setLoading(false);
+            });
+    }, []);
 
-      <p><b>Estado:</b> {order.status}</p>
+    if (loading) return <p>Cargando...</p>;
+    if (error) return <p>{error}</p>;
 
-      <p>
-        <b>Cliente:</b>{" "}
-        {order.customer?.firstName} {order.customer?.lastName}
-      </p>
-
-      <p>
-        <b>Dispositivo:</b>{" "}
-        {order.device?.brand} {order.device?.model}
-      </p>
-
-      <p><b>Fecha:</b> {order.created_at}</p>
-
-      <p><b>Problema:</b> {order.problemDescrip}</p>
-    </div>
-  );
+    return (
+        <div style={{ padding: 20 }}>
+            <h1>Seguimiento de Orden</h1>
+            <h2>Orden #{order.id}</h2>
+            <p><strong>Cliente:</strong> {order.customer.firstName} {order.customer.lastName}</p>
+            <p><strong>Estado:</strong> {order.status}</p>
+            <p><strong>Descripción:</strong> {order.problemDescription}</p>
+        </div>
+    );
 }
