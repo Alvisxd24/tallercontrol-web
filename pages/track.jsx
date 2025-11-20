@@ -94,7 +94,7 @@ export default function TrackPage() {
             <div className="p-2 bg-blue-600 rounded-xl shadow-lg shadow-blue-500/50">
               <Wrench className="text-white w-6 h-6" />
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">TallerControl</h1>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">TallerControl</h1>
           </div>
           
           <div className="glass-card rounded-2xl p-2 flex items-center mt-4">
