@@ -2,19 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fondo Premium Fijo */
 body {
-  background: #f0f2f5; /* Color base */
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f0f4f8;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* Esto crea el fondo degradado suave fijo detrás de todo */
+/* Clase personalizada para el fondo animado tipo "Glass" */
 .premium-bg {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: radial-gradient(circle at 50% 0%, #a7b5ff 0%, #f0f2f5 50%), 
-              radial-gradient(circle at 80% 20%, #d4dcfc 0%, transparent 50%);
+  background: radial-gradient(circle at 50% 0%, #e0e7ff 0%, #f0f4f8 50%), 
+              radial-gradient(circle at 85% 30%, #ede9fe 0%, transparent 50%);
   z-index: -1;
+}
+
+/* Ocultar barra de scroll en la galería de fotos */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Animaciones suaves */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
 }
