@@ -1,241 +1,272 @@
 import { useState, useEffect } from 'react'
-import { Search, Smartphone, Check, MapPin, DollarSign, Camera, AlertTriangle, CreditCard, User, Box } from "lucide-react"
+import { Search, Smartphone, CheckCircle, Wrench, Package, User, AlertTriangle, CreditCard, ChevronRight, Camera, FileText, Phone, Hash } from "lucide-react"
 import { createClient } from '@supabase/supabase-js'
 
-// CONFIGURACIÓN SUPABASE
+// --- CONFIGURACIÓN SUPABASE ---
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export default function TrackPage() {
-  // Estado
   const [query, setQuery] = useState('')
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // BUSCAR AUTOMÁTICAMENTE SI HAY TOKEN EN LA URL (QR)
+  // DETECTAR SI HAY QR (TOKEN)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const tokenParam = params.get('token'); // ¡Ahora buscamos por 'token'!
+    const tokenParam = params.get('token');
     if (tokenParam) {
       setQuery(tokenParam);
       searchOrder(tokenParam);
     }
   }, []);
 
-  // FUNCIÓN DE BÚSQUEDA SEGURA
+  // BUSCAR ORDEN
   const searchOrder = async (searchTerm) => {
     if (!searchTerm) return;
-    setLoading(true);
-    setError(null);
-    setOrder(null);
+    setLoading(true); setError(null); setOrder(null);
 
     try {
-      // AHORA BUSCAMOS POR 'tracking_token' (El código secreto)
-      // O por cédula si el usuario escribe manualmente (opcional)
       let dbQuery = supabase.from('orders').select('*')
       
-      // Si el texto es largo (parece un UUID), buscamos por token
       if (searchTerm.length > 20) {
           dbQuery = dbQuery.eq('tracking_token', searchTerm);
       } else {
-          // Si es corto, asumimos Cédula (NO ID). 
-          // Esto evita que adivinen IDs secuenciales.
           dbQuery = dbQuery.eq('customer->>idCard', searchTerm); 
       }
 
       const { data, error } = await dbQuery.single();
 
       if (error || !data) {
-        setError("No encontramos una orden con ese código.");
+        setError("No encontramos una orden activa con esos datos.");
       } else {
         setOrder(data);
       }
     } catch (err) {
-      setError("Error de conexión.");
+      setError("Error de conexión. Intenta de nuevo.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    searchOrder(query);
-  }
+  const handleSubmit = (e) => { e.preventDefault(); searchOrder(query); }
 
-  // ESTILOS DE ESTADO
-  const getStatusStep = (status) => {
-    const steps = ['Recibido', 'Diagnóstico', 'En Reparación', 'Listo para Entregar', 'Entregado'];
-    // Mapeamos tus estados a índices (0-4)
-    const map = {
+  // LOGICA DE BARRA DE PROGRESO
+  const getStatusInfo = (status) => {
+    const steps = ['Recibido', 'Diagnóstico', 'En Reparación', 'Listo', 'Entregado'];
+    const mapIdx = {
       'Recibido': 0, 'Diagnóstico': 1, 'Pendiente Repuesto': 2, 
       'En Reparación': 2, 'Listo para Entregar': 3, 'Entregado': 4,
       'Devuelto (No Reparado)': 4, 'Cancelada': 4
     };
-    return map[status] || 0;
+    return { steps, currentIdx: mapIdx[status] || 0 };
   };
 
+  // HELPERS PARA ACCESORIOS
+  const formatAccessories = (acc) => {
+    if (!acc) return 'Ninguno';
+    // Si es texto directo (modo general)
+    if (acc.general && typeof acc.general === 'string' && !acc.sim && !acc.charger) return acc.general;
+    
+    // Si es objeto de checkboxes (modo celulares)
+    const list = [];
+    if (acc.sim) list.push('Chip/SIM');
+    if (acc.memoryCard) list.push('Memoria SD');
+    if (acc.charger) list.push('Cargador');
+    if (acc.case) list.push('Funda/Forro');
+    if (acc.general) list.push(acc.general); // Otros agregados a mano
+
+    return list.length > 0 ? list.join(', ') : 'Ninguno';
+  }
+
   return (
-    <div className="min-h-screen font-sans text-slate-700 relative overflow-hidden">
-      {/* FONDO PREMIUM (Definido en globals.css o aquí en línea) */}
-      <div className="premium-bg"></div>
+    <div className="min-h-screen font-sans text-slate-800 relative">
+      {/* FONDO PREMIUM */}
+      <div className="premium-gradient-bg"></div>
 
-      {/* ENCABEZADO */}
-      <div className="pt-12 pb-6 text-center px-4">
-        <div className="inline-flex items-center gap-2 text-blue-600 mb-2">
-          <Smartphone className="w-6 h-6 fill-current" />
-          <span className="font-bold text-xl tracking-tight">TallerControl</span>
-        </div>
-        <h1 className="text-3xl font-black text-slate-800 mb-2">Estado de Reparación</h1>
-        <p className="text-slate-500 text-sm">Rastrea tu equipo en tiempo real</p>
-      </div>
-
-      <main className="max-w-md mx-auto px-4 pb-20">
+      <main className="max-w-lg mx-auto px-4 py-12 relative z-10">
         
-        {/* --- TARJETA DE BÚSQUEDA FLOTANTE --- */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] border border-white mb-8">
-            <form onSubmit={handleSubmit}>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">
-                Código de Rastreo o Cédula
-              </label>
-              <div className="relative flex items-center">
-                <input 
-                  type="text" 
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Ej: a1b2-c3d4..."
-                  className="w-full bg-slate-50 border-none rounded-2xl py-4 pl-4 pr-12 text-slate-800 font-medium focus:ring-2 focus:ring-blue-500/50 outline-none transition-all shadow-inner"
-                />
-                <button 
-                  disabled={loading}
-                  className="absolute right-2 bg-blue-600 text-white p-2.5 rounded-xl shadow-lg shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
-                >
-                  {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Search className="w-5 h-5" />}
-                </button>
-              </div>
-            </form>
+        {/* --- HEADER --- */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 mb-4">
+            <div className="p-2 bg-blue-600 rounded-xl shadow-lg shadow-blue-500/50">
+              <Wrench className="text-white w-6 h-6" />
+            </div>
+            <h1 className="text-2xl font-bold text-white tracking-tight">TallerControl</h1>
+          </div>
+          
+          <div className="glass-card rounded-2xl p-2 flex items-center mt-4">
+            <input 
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Cédula o escanea el QR"
+              className="bg-transparent border-none w-full px-4 py-2 text-slate-800 placeholder-slate-400 focus:outline-none font-medium"
+            />
+            <button 
+              onClick={handleSubmit}
+              disabled={loading}
+              className="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-500 transition-all shadow-md disabled:opacity-50"
+            >
+              {loading ? <div className="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full"/> : <Search className="w-5 h-5" />}
+            </button>
+          </div>
+          
+          {error && (
+             <div className="mt-4 bg-red-500/10 backdrop-blur-md border border-red-500/20 text-red-100 p-3 rounded-xl text-sm font-medium">
+               {error}
+             </div>
+          )}
         </div>
 
-        {/* MENSAJE DE ERROR */}
-        {error && (
-          <div className="bg-red-50 text-red-500 px-6 py-4 rounded-3xl text-center mb-8 font-medium animate-fade-in">
-            {error}
-          </div>
-        )}
-
-        {/* --- RESULTADOS (SOLO SI HAY ORDEN) --- */}
+        {/* --- TARJETA PRINCIPAL DE RESULTADOS --- */}
         {order && (
-          <div className="animate-fade-in-up space-y-6">
+          <div className="bg-white rounded-[2.5rem] shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden animate-fade-in-up pb-6">
             
-            {/* 1. TARJETA DE ESTADO (STEPPER) */}
-            <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50">
-              <h3 className="text-center font-bold text-slate-800 mb-8">Proceso Actual</h3>
-              
-              <div className="relative flex justify-between items-center px-2">
-                {/* Línea de fondo */}
-                <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-100 -z-10"></div>
-                {/* Línea de progreso activa */}
-                <div 
-                  className="absolute top-1/2 left-0 h-1 bg-blue-500 -z-10 transition-all duration-1000"
-                  style={{ width: `${getStatusStep(order.status) * 25}%` }}
-                ></div>
-
-                {['Recibido', 'Diagnóstico', 'Reparación', 'Listo', 'Entregado'].map((step, i) => {
-                   const currentStep = getStatusStep(order.status);
-                   const active = i <= currentStep;
-                   const current = i === currentStep;
-
-                   return (
-                     <div key={step} className="flex flex-col items-center gap-3">
-                        <div className={`
-                          w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all duration-500
-                          ${active ? 'bg-blue-500 border-blue-100 text-white shadow-lg shadow-blue-500/30' : 'bg-white border-slate-100 text-slate-300'}
-                          ${current ? 'scale-125 ring-4 ring-blue-50' : ''}
-                        `}>
-                          {active ? <Check className="w-5 h-5" /> : <div className="w-2 h-2 bg-slate-200 rounded-full"/>}
-                        </div>
-                        {current && (
-                          <span className="absolute -bottom-8 text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-                            {step}
-                          </span>
-                        )}
-                     </div>
-                   )
-                })}
-              </div>
-              <div className="h-6"></div> {/* Espacio para la etiqueta flotante */}
+            {/* 1. ESTADO ACTUAL */}
+            <div className="bg-slate-50 p-8 pb-12 border-b border-slate-100 relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full -mr-10 -mt-10 blur-3xl opacity-50"></div>
+               <p className="text-center text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">Estado Actual</p>
+               <h2 className="text-center text-3xl font-black text-slate-800 mb-6">{order.status}</h2>
+               
+               {/* BARRA DE PROGRESO */}
+               <div className="flex justify-between items-center relative px-2">
+                  <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-200 -z-0 rounded-full"></div>
+                  <div 
+                    className="absolute top-1/2 left-0 h-1 bg-blue-500 -z-0 rounded-full transition-all duration-1000"
+                    style={{ width: `${getStatusInfo(order.status).currentIdx * 25}%` }}
+                  ></div>
+                  
+                  {getStatusInfo(order.status).steps.map((step, idx) => {
+                    const isActive = idx <= getStatusInfo(order.status).currentIdx;
+                    return (
+                      <div key={step} className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center border-4 transition-all duration-500 ${isActive ? 'bg-blue-500 border-white shadow-lg shadow-blue-500/40 scale-110' : 'bg-slate-200 border-white'}`}>
+                         {isActive && <CheckCircle className="w-4 h-4 text-white" />}
+                      </div>
+                    )
+                  })}
+               </div>
+               <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-wide">
+                 <span>Inicio</span>
+                 <span>Fin</span>
+               </div>
             </div>
 
-            {/* 2. GRID DE INFORMACIÓN */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Cliente */}
-              <div className="bg-white p-6 rounded-[2rem] shadow-sm">
-                <div className="w-10 h-10 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-3">
-                  <User className="w-5 h-5" />
+            {/* 2. GRID CLIENTE Y EQUIPO */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 -mt-6 relative z-10">
+              
+              {/* TARJETA CLIENTE MEJORADA */}
+              <div className="bg-white p-5 rounded-2xl shadow-lg border border-slate-100">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-bold text-blue-400 uppercase">Cliente</span>
                 </div>
-                <p className="text-xs font-bold text-slate-400 uppercase">Cliente</p>
-                <p className="font-bold text-slate-800 text-lg leading-tight mt-1">
-                  {order.customer?.firstName}
+                <p className="font-bold text-slate-800 text-lg leading-tight mb-2">
+                  {order.customer?.firstName} {order.customer?.lastName}
                 </p>
-              </div>
-              {/* Equipo */}
-              <div className="bg-white p-6 rounded-[2rem] shadow-sm">
-                <div className="w-10 h-10 bg-violet-50 rounded-2xl flex items-center justify-center text-violet-600 mb-3">
-                  <Smartphone className="w-5 h-5" />
+                
+                {/* Cédula y Teléfono */}
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-slate-500 text-sm">
+                        <Hash className="w-3 h-3 text-slate-300" />
+                        <span>{order.customer?.idCard}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-500 text-sm">
+                        <Phone className="w-3 h-3 text-slate-300" />
+                        <span>{order.customer?.phone}</span>
+                    </div>
                 </div>
-                <p className="text-xs font-bold text-slate-400 uppercase">Equipo</p>
-                <p className="font-bold text-slate-800 text-lg leading-tight mt-1">
+              </div>
+
+              {/* TARJETA EQUIPO */}
+              <div className="bg-white p-5 rounded-2xl shadow-lg border border-slate-100">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-violet-50 rounded-lg text-violet-600">
+                    <Smartphone className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-bold text-violet-400 uppercase">Equipo</span>
+                </div>
+                <p className="font-bold text-slate-800 text-lg leading-tight mb-1">
                   {order.device?.model}
                 </p>
-              </div>
-            </div>
-
-            {/* 3. FALLA REPORTADA */}
-            <div className="bg-amber-50 p-6 rounded-[2rem] border border-amber-100 flex gap-4 items-start">
-              <div className="p-2 bg-white rounded-xl text-amber-500 shadow-sm">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-amber-400 uppercase mb-1">Falla Reportada</p>
-                <p className="text-amber-900 font-medium leading-snug text-sm">
-                  "{order.problemDescription}"
+                <p className="text-sm text-slate-500 font-medium">
+                   {order.device?.brand} • {order.device?.color}
                 </p>
               </div>
             </div>
 
-            {/* 4. EVIDENCIA FOTOGRÁFICA */}
-            {order.photos && order.photos.length > 0 && (
-              <div className="bg-white p-6 rounded-[2.5rem] shadow-sm">
-                <p className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-                  <Camera className="w-4 h-4 text-slate-400" /> Evidencia
-                </p>
-                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                  {order.photos.map((pic, idx) => (
-                    <a key={idx} href={pic} target="_blank" className="flex-shrink-0">
-                       <img src={pic} className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-50 shadow-sm" />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* 3. DETALLES ADICIONALES (ACCESORIOS Y NOTAS) */}
+            <div className="px-8 py-6 space-y-6">
 
-            {/* 5. TOTAL A PAGAR (BARRA INFERIOR) */}
-            <div className="bg-white p-6 rounded-[2.5rem] shadow-xl shadow-slate-200/50 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                 <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-400">
-                   <CreditCard className="w-6 h-6" />
-                 </div>
-                 <div>
-                   <p className="text-xs font-bold text-slate-400 uppercase">Pendiente</p>
-                   <p className="text-slate-600 text-xs">Total a pagar</p>
-                 </div>
+              {/* Accesorios y Observaciones */}
+              <div className="bg-slate-50 p-5 rounded-[1.5rem] border border-slate-100 space-y-4">
+                  {/* Accesorios */}
+                  <div>
+                      <p className="text-xs font-bold text-slate-400 uppercase mb-1 flex items-center gap-2">
+                          <Package className="w-3 h-3" /> Accesorios Recibidos
+                      </p>
+                      <p className="text-slate-700 font-medium text-sm">
+                          {formatAccessories(order.accessories)}
+                      </p>
+                  </div>
+                  
+                  {/* Observaciones Internas (Si existen) */}
+                  {order.internalNotes && (
+                      <div className="pt-3 border-t border-slate-200">
+                           <p className="text-xs font-bold text-slate-400 uppercase mb-1 flex items-center gap-2">
+                              <FileText className="w-3 h-3" /> Observaciones del Taller
+                          </p>
+                          <p className="text-slate-600 italic text-sm leading-relaxed">
+                              "{order.internalNotes}"
+                          </p>
+                      </div>
+                  )}
               </div>
-              <div className="text-right">
-                 <p className="text-2xl font-black text-slate-800">
-                   ${order.finance?.pendingBalance?.toFixed(2)}
+
+              {/* Falla Reportada */}
+              <div className="bg-amber-50 p-5 rounded-[1.5rem] border border-amber-100">
+                 <div className="flex items-center gap-2 mb-2 text-amber-600">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span className="text-xs font-bold uppercase">Falla Reportada</span>
+                 </div>
+                 <p className="text-amber-900/80 text-sm font-medium leading-relaxed">
+                   "{order.problemDescription}"
                  </p>
               </div>
+
+              {/* Fotos */}
+              {order.photos && order.photos.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
+                    <Camera className="w-4 h-4" /> Evidencia
+                  </p>
+                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                    {order.photos.map((pic, i) => (
+                      <a key={i} href={pic} target="_blank" className="flex-shrink-0">
+                         <img src={pic} className="w-20 h-20 rounded-xl object-cover shadow-sm border border-slate-100" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 4. TOTAL A PAGAR */}
+            <div className="mx-6 mt-2 p-5 bg-slate-900 rounded-3xl text-white flex justify-between items-center shadow-xl shadow-slate-900/20">
+               <div className="flex items-center gap-3">
+                 <div className="p-2 bg-white/10 rounded-full"><CreditCard className="w-5 h-5 text-white"/></div>
+                 <div>
+                   <p className="text-xs text-slate-400 font-bold uppercase">Saldo Pendiente</p>
+                   <p className="text-xs text-slate-500">Total a pagar al retirar</p>
+                 </div>
+               </div>
+               <p className="text-2xl font-black tracking-tight">
+                 ${order.finance?.pendingBalance?.toFixed(2)}
+               </p>
             </div>
 
           </div>
