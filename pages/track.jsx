@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Search, Smartphone, Zap, Calendar, User, DollarSign, Camera } from "lucide-react"
+import { Search, Smartphone, Zap, Calendar, User, DollarSign, Camera, X, Phone, Hash, FileText, Package, AlertTriangle, CheckCircle } from "lucide-react"
 import { createClient } from '@supabase/supabase-js'
 
+// --- CONFIGURACIÓN SUPABASE ---
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
@@ -11,13 +12,16 @@ export default function TrackPageFriendly() {
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [selectedPhoto, setSelectedPhoto] = useState(null) // Estado para la foto ampliada
 
+  // DETECTAR QR (TOKEN)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tokenParam = params.get('token');
     if (tokenParam) { setQuery(tokenParam); searchOrder(tokenParam); }
   }, []);
 
+  // FUNCIÓN DE BÚSQUEDA
   const searchOrder = async (searchTerm) => {
     if (!searchTerm) return;
     setLoading(true); setError(null); setOrder(null);
@@ -25,99 +29,216 @@ export default function TrackPageFriendly() {
       let dbQuery = supabase.from('orders').select('*')
       if (searchTerm.length > 20) dbQuery = dbQuery.eq('tracking_token', searchTerm);
       else dbQuery = dbQuery.eq('customer->>idCard', searchTerm);
+      
       const { data, error } = await dbQuery.single();
+      
       if (error || !data) setError("Ups, no encontramos esa orden.");
       else setOrder(data);
     } catch (err) { setError("Error de conexión."); } finally { setLoading(false); }
   };
 
-  return (
-    <div className="min-h-screen bg-indigo-600 flex flex-col items-center justify-center p-4 font-sans">
-      
-      <h1 className="text-white text-3xl font-bold mb-8 tracking-tight">TallerControl</h1>
+  // HELPERS
+  const formatAccessories = (acc) => {
+    if (!acc) return 'Ninguno';
+    if (acc.general && typeof acc.general === 'string' && !acc.sim && !acc.charger) return acc.general;
+    const list = [];
+    if (acc.sim) list.push('Chip/SIM');
+    if (acc.memoryCard) list.push('Memoria SD');
+    if (acc.charger) list.push('Cargador');
+    if (acc.case) list.push('Funda/Forro');
+    if (acc.general) list.push(acc.general);
+    return list.length > 0 ? list.join(', ') : 'Ninguno';
+  }
 
-      {!order ? (
-        <div className="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl shadow-indigo-900/50">
+  const getStatusProgress = (status) => {
+    const map = { 'Recibido': 10, 'Diagnóstico': 30, 'Pendiente Repuesto': 50, 'En Reparación': 70, 'Listo para Entregar': 90, 'Entregado': 100, 'Cancelada': 100, 'Devuelto (No Reparado)': 100 };
+    return map[status] || 10;
+  };
+
+  const getStatusColor = (status) => {
+      if (status === 'Listo para Entregar' || status === 'Entregado') return 'bg-green-500';
+      if (status === 'Cancelada' || status === 'Devuelto (No Reparado)') return 'bg-red-500';
+      return 'bg-indigo-500'; // Color por defecto (cargando/proceso)
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F0F4F8] flex flex-col items-center justify-center p-4 font-sans pb-20">
+      
+      {/* HEADER SIMPLE */}
+      <div className="mb-8 text-center">
+         <h1 className="text-4xl font-black text-indigo-900 tracking-tighter mb-2">TallerControl</h1>
+         <p className="text-indigo-400 font-medium">Rastreo de Servicio</p>
+      </div>
+
+      {/* --- PANTALLA DE BÚSQUEDA (SI NO HAY ORDEN) --- */}
+      {!order && (
+        <div className="bg-white w-full max-w-md rounded-3xl p-8 shadow-xl shadow-indigo-100 border border-indigo-50">
            <h2 className="text-2xl font-bold text-gray-800 mb-2">¡Hola! 👋</h2>
-           <p className="text-gray-500 mb-6">Introduce tu cédula o código para ver como va tu equipo.</p>
+           <p className="text-gray-500 mb-6">Introduce tu cédula o escanea el QR.</p>
            
            <form onSubmit={(e) => {e.preventDefault(); searchOrder(query)}}>
-             <div className="bg-gray-100 p-2 rounded-2xl flex items-center mb-4 border-2 border-transparent focus-within:border-indigo-500 transition-colors">
-               <Search className="text-gray-400 ml-2" />
+             <div className="bg-gray-50 p-4 rounded-2xl flex items-center mb-4 border-2 border-transparent focus-within:border-indigo-500 transition-all">
+               <Search className="text-indigo-400 ml-2" />
                <input 
                  type="text" 
-                 className="bg-transparent w-full p-2 outline-none text-gray-700 font-medium"
-                 placeholder="Ej: 12345..."
+                 className="bg-transparent w-full p-2 outline-none text-gray-700 font-bold text-lg placeholder-gray-300"
+                 placeholder="Cédula..."
                  value={query}
                  onChange={(e) => setQuery(e.target.value)}
                />
              </div>
-             <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-transform active:scale-95">
+             <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl transition-transform active:scale-95 shadow-lg shadow-indigo-200">
                {loading ? "Buscando..." : "Ver Estado"}
              </button>
            </form>
-           {error && <p className="mt-4 text-center text-red-500 font-bold text-sm">{error}</p>}
+           {error && <p className="mt-4 text-center text-red-500 font-bold text-sm bg-red-50 p-2 rounded-lg">{error}</p>}
         </div>
-      ) : (
-        <div className="bg-white w-full max-w-md rounded-[2rem] overflow-hidden shadow-2xl shadow-indigo-900/50 animate-fade-in-up">
-           {/* TOP BANNER */}
-           <div className="bg-indigo-500 p-8 text-white text-center relative overflow-hidden">
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-white opacity-10 rounded-full"></div>
-              <div className="inline-block bg-white/20 backdrop-blur-md px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-2">
-                Estado
-              </div>
-              <h2 className="text-4xl font-black tracking-tight">{order.status}</h2>
-           </div>
+      )}
 
-           <div className="p-8 space-y-6">
-              {/* CLIENTE */}
-              <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-500">
-                    <User className="w-6 h-6" />
-                 </div>
-                 <div>
-                    <p className="text-xs font-bold text-gray-400 uppercase">Propietario</p>
-                    <p className="text-lg font-bold text-gray-800">{order.customer?.firstName}</p>
-                 </div>
-              </div>
-
-              {/* EQUIPO */}
-              <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-500">
-                    <Smartphone className="w-6 h-6" />
-                 </div>
-                 <div>
-                    <p className="text-xs font-bold text-gray-400 uppercase">Dispositivo</p>
-                    <p className="text-lg font-bold text-gray-800">{order.device?.brand} {order.device?.model}</p>
-                 </div>
+      {/* --- TARJETA DE RESULTADOS (CON BORDE ANIMADO) --- */}
+      {order && (
+        <div className="relative group w-full max-w-md">
+           {/* FONDO ANIMADO (BORDE DE COLORES) */}
+           <div className="absolute -inset-1 bg-gradient-to-r from-red-500 via-purple-500 to-blue-500 rounded-[2.2rem] blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-gradient-xy"></div>
+           
+           <div className="relative bg-white w-full rounded-[2rem] overflow-hidden shadow-2xl">
+              
+              {/* 1. ENCABEZADO DE ESTADO */}
+              <div className="bg-indigo-50 p-8 pb-10 text-center border-b border-indigo-100">
+                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-white text-xs font-bold uppercase tracking-wider mb-4 shadow-sm ${getStatusColor(order.status)}`}>
+                    {order.status}
+                  </div>
+                  
+                  {/* BARRA DE PROGRESO */}
+                  <div className="w-full bg-gray-200 rounded-full h-3 mb-2 overflow-hidden">
+                    <div 
+                        className={`h-3 rounded-full transition-all duration-1000 ${getStatusColor(order.status)}`} 
+                        style={{ width: `${getStatusProgress(order.status)}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-400 font-medium flex justify-between">
+                      <span>Inicio</span>
+                      <span>{getStatusProgress(order.status)}% Completado</span>
+                  </p>
               </div>
 
-              {/* INFO EXTRA */}
-              <div className="bg-gray-50 rounded-2xl p-5 text-sm text-gray-600 leading-relaxed border border-gray-100">
-                 <p className="font-bold text-gray-800 mb-1 flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-500"/> Diagnóstico:</p>
-                 "{order.problemDescription}"
-              </div>
-
-              {/* FOTOS */}
-              {order.photos?.length > 0 && (
-                 <div className="flex -space-x-4 overflow-hidden py-2">
-                    {order.photos.map((p,i) => (
-                       <img key={i} src={p} className="w-12 h-12 rounded-full border-2 border-white object-cover" />
-                    ))}
-                    <div className="w-12 h-12 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-xs font-bold text-gray-500">
-                       +{order.photos.length}
+              {/* 2. DATOS DEL CLIENTE */}
+              <div className="px-8 -mt-6">
+                 <div className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100 flex items-start gap-4">
+                    <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-500 shrink-0">
+                        <User className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="text-xs font-bold text-gray-400 uppercase mb-1">Cliente</p>
+                        <h3 className="text-lg font-bold text-gray-800 leading-tight">{order.customer?.firstName} {order.customer?.lastName}</h3>
+                        <div className="flex flex-wrap gap-3 mt-2">
+                            <span className="flex items-center text-xs font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
+                                <Hash className="w-3 h-3 mr-1"/> {order.customer?.idCard}
+                            </span>
+                            <span className="flex items-center text-xs font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
+                                <Phone className="w-3 h-3 mr-1"/> {order.customer?.phone}
+                            </span>
+                        </div>
                     </div>
                  </div>
-              )}
+              </div>
 
-              {/* COSTO */}
-              <div className="border-t border-gray-100 pt-6 flex justify-between items-center">
-                 <span className="text-gray-400 font-medium">Total Restante</span>
-                 <span className="text-3xl font-black text-indigo-600">${order.finance?.pendingBalance?.toFixed(2)}</span>
+              <div className="p-8 space-y-6">
+                  {/* 3. EQUIPO Y FALLA */}
+                  <div className="flex gap-4">
+                      <div className="flex-1 bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                          <Smartphone className="w-6 h-6 text-blue-500 mb-2" />
+                          <p className="text-xs font-bold text-blue-400 uppercase">Equipo</p>
+                          <p className="font-bold text-gray-800">{order.device?.brand} {order.device?.model}</p>
+                      </div>
+                      <div className="flex-1 bg-yellow-50 p-4 rounded-2xl border border-yellow-100">
+                          <AlertTriangle className="w-6 h-6 text-yellow-500 mb-2" />
+                          <p className="text-xs font-bold text-yellow-600 uppercase">Falla</p>
+                          <p className="font-medium text-gray-800 text-sm leading-tight line-clamp-2">"{order.problemDescription}"</p>
+                      </div>
+                  </div>
+
+                  {/* 4. ACCESORIOS Y NOTAS (SECCIÓN GRIS) */}
+                  <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+                      <div className="mb-4">
+                          <p className="text-xs font-bold text-gray-400 uppercase mb-1 flex items-center gap-2">
+                              <Package className="w-3 h-3" /> Accesorios Dejados
+                          </p>
+                          <p className="text-gray-700 font-medium text-sm">{formatAccessories(order.accessories)}</p>
+                      </div>
+                      
+                      {/* Observación Interna (SOLO SI EXISTE) */}
+                      {order.internalNotes && (
+                          <div className="pt-3 border-t border-gray-200">
+                              <p className="text-xs font-bold text-gray-400 uppercase mb-1 flex items-center gap-2">
+                                  <FileText className="w-3 h-3" /> Nota del Taller
+                              </p>
+                              <p className="text-gray-600 italic text-sm">"{order.internalNotes}"</p>
+                          </div>
+                      )}
+                  </div>
+
+                  {/* 5. FOTOS (CLIC PARA AMPLIAR) */}
+                  {order.photos?.length > 0 && (
+                     <div>
+                        <p className="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center gap-2">
+                            <Camera className="w-4 h-4" /> Evidencia (Toca para ver)
+                        </p>
+                        <div className="flex gap-3 overflow-x-auto pb-2">
+                           {order.photos.map((p,i) => (
+                              <button key={i} onClick={() => setSelectedPhoto(p)} className="shrink-0 focus:outline-none transform transition hover:scale-105">
+                                 <img src={p} className="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-md" />
+                              </button>
+                           ))}
+                        </div>
+                     </div>
+                  )}
+
+                  {/* 6. TOTAL */}
+                  <div className="bg-gray-900 rounded-2xl p-6 text-white shadow-xl flex justify-between items-center">
+                     <div>
+                        <p className="text-gray-400 text-xs font-bold uppercase mb-1">Total Restante</p>
+                        <p className="text-gray-500 text-xs">A pagar al retirar</p>
+                     </div>
+                     <p className="text-3xl font-black tracking-tight">${order.finance?.pendingBalance?.toFixed(2)}</p>
+                  </div>
+                  
+                  <button onClick={() => setOrder(null)} className="w-full text-center text-indigo-500 font-bold text-sm hover:underline">
+                      Consultar otra orden
+                  </button>
               </div>
            </div>
         </div>
       )}
+
+      {/* --- MODAL DE FOTO (LIGHTBOX) --- */}
+      {selectedPhoto && (
+          <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={() => setSelectedPhoto(null)}>
+              <button className="absolute top-4 right-4 text-white bg-white/20 p-2 rounded-full hover:bg-white/40 transition">
+                  <X className="w-6 h-6" />
+              </button>
+              <img src={selectedPhoto} className="max-w-full max-h-[90vh] rounded-lg shadow-2xl border-4 border-white/10" onClick={(e) => e.stopPropagation()} />
+          </div>
+      )}
+
+      {/* ESTILOS EXTRA PARA ANIMACIONES (CSS EN JS) */}
+      <style jsx global>{`
+        @keyframes gradient-xy {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .animate-gradient-xy {
+            background-size: 200% 200%;
+            animation: gradient-xy 6s ease infinite;
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
     </div>
   )
 }
