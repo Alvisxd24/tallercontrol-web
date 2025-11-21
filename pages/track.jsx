@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Search, Smartphone, Check, MapPin, ArrowRight, Camera, User } from "lucide-react"
+import { Search, Smartphone, Zap, Calendar, User, DollarSign, Camera } from "lucide-react"
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-export default function TrackPageSwiss() {
+export default function TrackPageFriendly() {
   const [query, setQuery] = useState('')
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -26,89 +26,98 @@ export default function TrackPageSwiss() {
       if (searchTerm.length > 20) dbQuery = dbQuery.eq('tracking_token', searchTerm);
       else dbQuery = dbQuery.eq('customer->>idCard', searchTerm);
       const { data, error } = await dbQuery.single();
-      if (error || !data) setError("Orden no encontrada.");
+      if (error || !data) setError("Ups, no encontramos esa orden.");
       else setOrder(data);
     } catch (err) { setError("Error de conexión."); } finally { setLoading(false); }
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] font-sans">
+    <div className="min-h-screen bg-indigo-600 flex flex-col items-center justify-center p-4 font-sans">
       
-      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
-          <span className="font-semibold tracking-tight">TallerControl</span>
-          <span className="text-xs font-medium text-gray-500">Soporte Técnico</span>
+      <h1 className="text-white text-3xl font-bold mb-8 tracking-tight">TallerControl</h1>
+
+      {!order ? (
+        <div className="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl shadow-indigo-900/50">
+           <h2 className="text-2xl font-bold text-gray-800 mb-2">¡Hola! 👋</h2>
+           <p className="text-gray-500 mb-6">Introduce tu cédula o código para ver como va tu equipo.</p>
+           
+           <form onSubmit={(e) => {e.preventDefault(); searchOrder(query)}}>
+             <div className="bg-gray-100 p-2 rounded-2xl flex items-center mb-4 border-2 border-transparent focus-within:border-indigo-500 transition-colors">
+               <Search className="text-gray-400 ml-2" />
+               <input 
+                 type="text" 
+                 className="bg-transparent w-full p-2 outline-none text-gray-700 font-medium"
+                 placeholder="Ej: 12345..."
+                 value={query}
+                 onChange={(e) => setQuery(e.target.value)}
+               />
+             </div>
+             <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-transform active:scale-95">
+               {loading ? "Buscando..." : "Ver Estado"}
+             </button>
+           </form>
+           {error && <p className="mt-4 text-center text-red-500 font-bold text-sm">{error}</p>}
         </div>
-      </nav>
+      ) : (
+        <div className="bg-white w-full max-w-md rounded-[2rem] overflow-hidden shadow-2xl shadow-indigo-900/50 animate-fade-in-up">
+           {/* TOP BANNER */}
+           <div className="bg-indigo-500 p-8 text-white text-center relative overflow-hidden">
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-white opacity-10 rounded-full"></div>
+              <div className="inline-block bg-white/20 backdrop-blur-md px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-2">
+                Estado
+              </div>
+              <h2 className="text-4xl font-black tracking-tight">{order.status}</h2>
+           </div>
 
-      <main className="max-w-xl mx-auto px-6 py-16">
-        
-        {!order && (
-          <div className="text-center py-10">
-            <h1 className="text-4xl font-semibold mb-4 tracking-tight">Rastrea tu servicio.</h1>
-            <p className="text-gray-500 text-lg mb-10">Consulta el estado de reparación de tu dispositivo al instante.</p>
-            
-            <form onSubmit={(e) => {e.preventDefault(); searchOrder(query)}} className="relative">
-              <input 
-                type="text" 
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="N° de Orden o Cédula"
-                className="w-full bg-white border border-gray-300 rounded-xl py-4 pl-5 pr-12 text-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              />
-              <button className="absolute right-3 top-3 bottom-3 bg-black text-white w-10 rounded-lg flex items-center justify-center hover:bg-gray-800 transition-colors">
-                {loading ? <div className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full"/> : <ArrowRight className="w-5 h-5" />}
-              </button>
-            </form>
-            {error && <p className="mt-4 text-red-500 font-medium">{error}</p>}
-          </div>
-        )}
+           <div className="p-8 space-y-6">
+              {/* CLIENTE */}
+              <div className="flex items-center gap-4">
+                 <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-500">
+                    <User className="w-6 h-6" />
+                 </div>
+                 <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase">Propietario</p>
+                    <p className="text-lg font-bold text-gray-800">{order.customer?.firstName}</p>
+                 </div>
+              </div>
 
-        {order && (
-          <div className="animate-fade-in">
-            {/* ESTADO GRANDE */}
-            <div className="bg-white rounded-3xl p-10 shadow-sm border border-gray-100 text-center mb-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 mb-6">
-                <Check className="w-8 h-8" />
+              {/* EQUIPO */}
+              <div className="flex items-center gap-4">
+                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-500">
+                    <Smartphone className="w-6 h-6" />
+                 </div>
+                 <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase">Dispositivo</p>
+                    <p className="text-lg font-bold text-gray-800">{order.device?.brand} {order.device?.model}</p>
+                 </div>
               </div>
-              <h2 className="text-3xl font-semibold mb-2 tracking-tight">{order.status}</h2>
-              <p className="text-gray-500">Última actualización: {new Date(order.created_at).toLocaleDateString()}</p>
-            </div>
 
-            {/* INFO LIST */}
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                <span className="text-gray-500 font-medium">Cliente</span>
-                <span className="font-semibold">{order.customer?.firstName} {order.customer?.lastName}</span>
+              {/* INFO EXTRA */}
+              <div className="bg-gray-50 rounded-2xl p-5 text-sm text-gray-600 leading-relaxed border border-gray-100">
+                 <p className="font-bold text-gray-800 mb-1 flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-500"/> Diagnóstico:</p>
+                 "{order.problemDescription}"
               </div>
-              <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                <span className="text-gray-500 font-medium">Dispositivo</span>
-                <span className="font-semibold">{order.device?.brand} {order.device?.model}</span>
-              </div>
-              <div className="p-6 border-b border-gray-100">
-                <span className="text-gray-500 font-medium block mb-2">Diagnóstico</span>
-                <span className="font-medium text-gray-800 leading-relaxed">{order.problemDescription}</span>
-              </div>
+
+              {/* FOTOS */}
               {order.photos?.length > 0 && (
-                <div className="p-6 border-b border-gray-100">
-                   <span className="text-gray-500 font-medium block mb-3">Fotos</span>
-                   <div className="flex gap-2">
-                      {order.photos.map((p,i) => <img key={i} src={p} className="w-16 h-16 rounded-lg object-cover border border-gray-200"/>)}
-                   </div>
-                </div>
+                 <div className="flex -space-x-4 overflow-hidden py-2">
+                    {order.photos.map((p,i) => (
+                       <img key={i} src={p} className="w-12 h-12 rounded-full border-2 border-white object-cover" />
+                    ))}
+                    <div className="w-12 h-12 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-xs font-bold text-gray-500">
+                       +{order.photos.length}
+                    </div>
+                 </div>
               )}
-              <div className="p-6 bg-gray-50 flex justify-between items-center">
-                <span className="font-semibold text-gray-900">Saldo Pendiente</span>
-                <span className="font-bold text-2xl">${order.finance?.pendingBalance?.toFixed(2)}</span>
+
+              {/* COSTO */}
+              <div className="border-t border-gray-100 pt-6 flex justify-between items-center">
+                 <span className="text-gray-400 font-medium">Total Restante</span>
+                 <span className="text-3xl font-black text-indigo-600">${order.finance?.pendingBalance?.toFixed(2)}</span>
               </div>
-            </div>
-            
-            <button onClick={() => setOrder(null)} className="mt-8 text-blue-600 font-medium hover:underline w-full text-center">
-              Consultar otra orden
-            </button>
-          </div>
-        )}
-      </main>
+           </div>
+        </div>
+      )}
     </div>
   )
 }
