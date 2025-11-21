@@ -12,16 +12,14 @@ export default function TrackPageFriendly() {
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [selectedPhoto, setSelectedPhoto] = useState(null) // Estado para la foto ampliada
+  const [selectedPhoto, setSelectedPhoto] = useState(null)
 
-  // DETECTAR QR (TOKEN)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tokenParam = params.get('token');
     if (tokenParam) { setQuery(tokenParam); searchOrder(tokenParam); }
   }, []);
 
-  // FUNCIÓN DE BÚSQUEDA
   const searchOrder = async (searchTerm) => {
     if (!searchTerm) return;
     setLoading(true); setError(null); setOrder(null);
@@ -31,7 +29,6 @@ export default function TrackPageFriendly() {
       else dbQuery = dbQuery.eq('customer->>idCard', searchTerm);
       
       const { data, error } = await dbQuery.single();
-      
       if (error || !data) setError("Ups, no encontramos esa orden.");
       else setOrder(data);
     } catch (err) { setError("Error de conexión."); } finally { setLoading(false); }
@@ -56,60 +53,68 @@ export default function TrackPageFriendly() {
   };
 
   const getStatusColor = (status) => {
-      if (status === 'Listo para Entregar' || status === 'Entregado') return 'bg-green-500';
+      if (status === 'Listo para Entregar' || status === 'Entregado') return 'bg-emerald-500';
       if (status === 'Cancelada' || status === 'Devuelto (No Reparado)') return 'bg-red-500';
-      return 'bg-indigo-500'; // Color por defecto (cargando/proceso)
+      return 'bg-violet-600'; 
   };
 
   return (
-    <div className="min-h-screen bg-[#F0F4F8] flex flex-col items-center justify-center p-4 font-sans pb-20">
+    // FONDO MORADO VIBRANTE
+    <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-fuchsia-600 flex flex-col items-center justify-center p-4 font-sans pb-20">
       
-      {/* HEADER SIMPLE */}
+      {/* HEADER */}
       <div className="mb-8 text-center">
-         <h1 className="text-4xl font-black text-indigo-900 tracking-tighter mb-2">TallerControl</h1>
-         <p className="text-indigo-400 font-medium">Rastreo de Servicio</p>
+         <h1 className="text-4xl font-black text-white tracking-tighter mb-1 drop-shadow-md">TallerControl</h1>
+         <p className="text-purple-200 font-medium tracking-widest uppercase text-xs">Rastreo de Servicio</p>
       </div>
 
-      {/* --- PANTALLA DE BÚSQUEDA (SI NO HAY ORDEN) --- */}
+      {/* --- PANTALLA DE BÚSQUEDA --- */}
       {!order && (
-        <div className="bg-white w-full max-w-md rounded-3xl p-8 shadow-xl shadow-indigo-100 border border-indigo-50">
-           <h2 className="text-2xl font-bold text-gray-800 mb-2">¡Hola! 👋</h2>
-           <p className="text-gray-500 mb-6">Introduce tu cédula o escanea el QR.</p>
+        <div className="relative w-full max-w-md group">
+           {/* Borde Resplandeciente Estático */}
+           <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-violet-500 rounded-[2rem] blur opacity-75"></div>
            
-           <form onSubmit={(e) => {e.preventDefault(); searchOrder(query)}}>
-             <div className="bg-gray-50 p-4 rounded-2xl flex items-center mb-4 border-2 border-transparent focus-within:border-indigo-500 transition-all">
-               <Search className="text-indigo-400 ml-2" />
-               <input 
-                 type="text" 
-                 className="bg-transparent w-full p-2 outline-none text-gray-700 font-bold text-lg placeholder-gray-300"
-                 placeholder="Cédula..."
-                 value={query}
-                 onChange={(e) => setQuery(e.target.value)}
-               />
-             </div>
-             <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl transition-transform active:scale-95 shadow-lg shadow-indigo-200">
-               {loading ? "Buscando..." : "Ver Estado"}
-             </button>
-           </form>
-           {error && <p className="mt-4 text-center text-red-500 font-bold text-sm bg-red-50 p-2 rounded-lg">{error}</p>}
+           <div className="relative bg-white w-full rounded-[1.8rem] p-8 shadow-2xl">
+               <h2 className="text-2xl font-bold text-gray-800 mb-2">¡Hola! 👋</h2>
+               <p className="text-gray-500 mb-6">Introduce tu cédula o escanea el QR.</p>
+               
+               <form onSubmit={(e) => {e.preventDefault(); searchOrder(query)}}>
+                 <div className="bg-gray-50 p-4 rounded-2xl flex items-center mb-4 border-2 border-transparent focus-within:border-violet-500 transition-all">
+                   <Search className="text-violet-400 ml-2" />
+                   <input 
+                     type="text" 
+                     className="bg-transparent w-full p-2 outline-none text-gray-700 font-bold text-lg placeholder-gray-300"
+                     placeholder="Cédula..."
+                     value={query}
+                     onChange={(e) => setQuery(e.target.value)}
+                   />
+                 </div>
+                 <button className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-4 rounded-2xl transition-transform active:scale-95 shadow-lg shadow-violet-200">
+                   {loading ? "Buscando..." : "Ver Estado"}
+                 </button>
+               </form>
+               {error && <p className="mt-4 text-center text-red-500 font-bold text-sm bg-red-50 p-2 rounded-lg">{error}</p>}
+           </div>
         </div>
       )}
 
-      {/* --- TARJETA DE RESULTADOS (CON BORDE ANIMADO) --- */}
+      {/* --- TARJETA DE RESULTADOS CON LUCES GIRATORIAS --- */}
       {order && (
-        <div className="relative group w-full max-w-md">
-           {/* FONDO ANIMADO (BORDE DE COLORES) */}
-           <div className="absolute -inset-1 bg-gradient-to-r from-red-500 via-purple-500 to-blue-500 rounded-[2.2rem] blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-gradient-xy"></div>
+        // Contenedor principal con padding para el borde
+        <div className="relative w-full max-w-md p-[4px] overflow-hidden rounded-[2.5rem] shadow-2xl shadow-black/40">
            
-           <div className="relative bg-white w-full rounded-[2rem] overflow-hidden shadow-2xl">
+           {/* EFECTO DE LUCES GIRATORIAS (Conic Gradient Animado) */}
+           <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_0deg,#ff00ff_90deg,transparent_180deg,#00ffff_270deg,transparent_360deg)] animate-border-spin opacity-80"></div>
+           
+           {/* FONDO BLANCO DE LA TARJETA (Cubre el centro para dejar solo el borde) */}
+           <div className="relative bg-white w-full h-full rounded-[2.3rem] overflow-hidden">
               
-              {/* 1. ENCABEZADO DE ESTADO */}
-              <div className="bg-indigo-50 p-8 pb-10 text-center border-b border-indigo-100">
-                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-white text-xs font-bold uppercase tracking-wider mb-4 shadow-sm ${getStatusColor(order.status)}`}>
+              {/* 1. ENCABEZADO */}
+              <div className="bg-violet-50 p-8 pb-10 text-center border-b border-violet-100">
+                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-white text-xs font-bold uppercase tracking-wider mb-4 shadow-lg shadow-violet-300/50 ${getStatusColor(order.status)}`}>
                     {order.status}
                   </div>
                   
-                  {/* BARRA DE PROGRESO */}
                   <div className="w-full bg-gray-200 rounded-full h-3 mb-2 overflow-hidden">
                     <div 
                         className={`h-3 rounded-full transition-all duration-1000 ${getStatusColor(order.status)}`} 
@@ -118,24 +123,24 @@ export default function TrackPageFriendly() {
                   </div>
                   <p className="text-xs text-gray-400 font-medium flex justify-between">
                       <span>Inicio</span>
-                      <span>{getStatusProgress(order.status)}% Completado</span>
+                      <span>{getStatusProgress(order.status)}%</span>
                   </p>
               </div>
 
-              {/* 2. DATOS DEL CLIENTE */}
-              <div className="px-8 -mt-6">
-                 <div className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100 flex items-start gap-4">
-                    <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-500 shrink-0">
+              {/* 2. CLIENTE */}
+              <div className="px-8 -mt-6 relative z-10">
+                 <div className="bg-white p-5 rounded-2xl shadow-lg shadow-violet-100 border border-white flex items-start gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-pink-500 rounded-2xl flex items-center justify-center text-white shadow-md shrink-0">
                         <User className="w-6 h-6" />
                     </div>
                     <div>
                         <p className="text-xs font-bold text-gray-400 uppercase mb-1">Cliente</p>
                         <h3 className="text-lg font-bold text-gray-800 leading-tight">{order.customer?.firstName} {order.customer?.lastName}</h3>
-                        <div className="flex flex-wrap gap-3 mt-2">
-                            <span className="flex items-center text-xs font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            <span className="flex items-center text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
                                 <Hash className="w-3 h-3 mr-1"/> {order.customer?.idCard}
                             </span>
-                            <span className="flex items-center text-xs font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
+                            <span className="flex items-center text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
                                 <Phone className="w-3 h-3 mr-1"/> {order.customer?.phone}
                             </span>
                         </div>
@@ -147,44 +152,44 @@ export default function TrackPageFriendly() {
                   {/* 3. EQUIPO Y FALLA */}
                   <div className="flex gap-4">
                       <div className="flex-1 bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                          <Smartphone className="w-6 h-6 text-blue-500 mb-2" />
+                          <Smartphone className="w-6 h-6 text-blue-600 mb-2" />
                           <p className="text-xs font-bold text-blue-400 uppercase">Equipo</p>
-                          <p className="font-bold text-gray-800">{order.device?.brand} {order.device?.model}</p>
+                          <p className="font-bold text-gray-800">{order.device?.brand}</p>
+                          <p className="text-xs text-gray-500">{order.device?.model}</p>
                       </div>
-                      <div className="flex-1 bg-yellow-50 p-4 rounded-2xl border border-yellow-100">
-                          <AlertTriangle className="w-6 h-6 text-yellow-500 mb-2" />
-                          <p className="text-xs font-bold text-yellow-600 uppercase">Falla</p>
-                          <p className="font-medium text-gray-800 text-sm leading-tight line-clamp-2">"{order.problemDescription}"</p>
+                      <div className="flex-1 bg-amber-50 p-4 rounded-2xl border border-amber-100">
+                          <AlertTriangle className="w-6 h-6 text-amber-500 mb-2" />
+                          <p className="text-xs font-bold text-amber-500 uppercase">Falla</p>
+                          <p className="font-bold text-gray-800 text-xs leading-tight line-clamp-2">"{order.problemDescription}"</p>
                       </div>
                   </div>
 
-                  {/* 4. ACCESORIOS Y NOTAS (SECCIÓN GRIS) */}
+                  {/* 4. ACCESORIOS Y NOTAS */}
                   <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
                       <div className="mb-4">
                           <p className="text-xs font-bold text-gray-400 uppercase mb-1 flex items-center gap-2">
-                              <Package className="w-3 h-3" /> Accesorios Dejados
+                              <Package className="w-3 h-3" /> Accesorios
                           </p>
                           <p className="text-gray-700 font-medium text-sm">{formatAccessories(order.accessories)}</p>
                       </div>
                       
-                      {/* Observación Interna (SOLO SI EXISTE) */}
                       {order.internalNotes && (
                           <div className="pt-3 border-t border-gray-200">
                               <p className="text-xs font-bold text-gray-400 uppercase mb-1 flex items-center gap-2">
-                                  <FileText className="w-3 h-3" /> Nota del Taller
+                                  <FileText className="w-3 h-3" /> Nota Taller
                               </p>
                               <p className="text-gray-600 italic text-sm">"{order.internalNotes}"</p>
                           </div>
                       )}
                   </div>
 
-                  {/* 5. FOTOS (CLIC PARA AMPLIAR) */}
+                  {/* 5. FOTOS */}
                   {order.photos?.length > 0 && (
                      <div>
                         <p className="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center gap-2">
                             <Camera className="w-4 h-4" /> Evidencia (Toca para ver)
                         </p>
-                        <div className="flex gap-3 overflow-x-auto pb-2">
+                        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                            {order.photos.map((p,i) => (
                               <button key={i} onClick={() => setSelectedPhoto(p)} className="shrink-0 focus:outline-none transform transition hover:scale-105">
                                  <img src={p} className="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-md" />
@@ -195,15 +200,15 @@ export default function TrackPageFriendly() {
                   )}
 
                   {/* 6. TOTAL */}
-                  <div className="bg-gray-900 rounded-2xl p-6 text-white shadow-xl flex justify-between items-center">
+                  <div className="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg shadow-violet-300 flex justify-between items-center">
                      <div>
-                        <p className="text-gray-400 text-xs font-bold uppercase mb-1">Total Restante</p>
-                        <p className="text-gray-500 text-xs">A pagar al retirar</p>
+                        <p className="text-violet-100 text-xs font-bold uppercase mb-1">Pendiente</p>
+                        <p className="text-xs opacity-80">A pagar al retirar</p>
                      </div>
                      <p className="text-3xl font-black tracking-tight">${order.finance?.pendingBalance?.toFixed(2)}</p>
                   </div>
                   
-                  <button onClick={() => setOrder(null)} className="w-full text-center text-indigo-500 font-bold text-sm hover:underline">
+                  <button onClick={() => setOrder(null)} className="w-full text-center text-violet-500 font-bold text-sm hover:underline pb-2">
                       Consultar otra orden
                   </button>
               </div>
@@ -211,33 +216,34 @@ export default function TrackPageFriendly() {
         </div>
       )}
 
-      {/* --- MODAL DE FOTO (LIGHTBOX) --- */}
+      {/* MODAL FOTO */}
       {selectedPhoto && (
           <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={() => setSelectedPhoto(null)}>
-              <button className="absolute top-4 right-4 text-white bg-white/20 p-2 rounded-full hover:bg-white/40 transition">
-                  <X className="w-6 h-6" />
+              <button className="absolute top-6 right-6 text-white bg-white/10 p-2 rounded-full hover:bg-white/20 transition">
+                  <X className="w-8 h-8" />
               </button>
-              <img src={selectedPhoto} className="max-w-full max-h-[90vh] rounded-lg shadow-2xl border-4 border-white/10" onClick={(e) => e.stopPropagation()} />
+              <img src={selectedPhoto} className="max-w-full max-h-[85vh] rounded-xl shadow-2xl border border-white/20" onClick={(e) => e.stopPropagation()} />
           </div>
       )}
 
-      {/* ESTILOS EXTRA PARA ANIMACIONES (CSS EN JS) */}
+      {/* ESTILOS CSS EXTRA (Animación de rotación) */}
       <style jsx global>{`
-        @keyframes gradient-xy {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
+        @keyframes border-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
-        .animate-gradient-xy {
-            background-size: 200% 200%;
-            animation: gradient-xy 6s ease infinite;
+        .animate-border-spin {
+            animation: border-spin 4s linear infinite;
         }
-        .animate-fade-in {
-            animation: fadeIn 0.3s ease-out forwards;
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
       `}</style>
     </div>
   )
