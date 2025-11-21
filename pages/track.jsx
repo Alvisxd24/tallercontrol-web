@@ -10,7 +10,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export default function TrackPageFriendly() {
   const [query, setQuery] = useState('')
   const [order, setOrder] = useState(null)
-  const [shopName, setShopName] = useState('') // Estado para el nombre del taller
+  const [shopName, setShopName] = useState('') // Nombre del taller
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [selectedPhoto, setSelectedPhoto] = useState(null)
@@ -39,10 +39,13 @@ export default function TrackPageFriendly() {
           if (data.user_id) {
               const { data: settingsData } = await supabase
                   .from('settings')
-                  .select('shopName')
+                  .select('shopName') // Solo traemos el nombre
                   .eq('user_id', data.user_id)
                   .single();
-              if (settingsData) setShopName(settingsData.shopName);
+              
+              if (settingsData && settingsData.shopName) {
+                  setShopName(settingsData.shopName);
+              }
           }
       }
     } catch (err) { setError("Error de conexión."); } finally { setLoading(false); }
@@ -52,18 +55,14 @@ export default function TrackPageFriendly() {
   const renderStepper = (currentStatus) => {
       const steps = ['Recibido', 'Diagnóstico', 'En Reparación', 'Listo para Entregar', 'Entregado'];
       
-      // Mapear estado actual a índice
       let activeIndex = steps.indexOf(currentStatus);
-      if (currentStatus === 'Pendiente Repuesto') activeIndex = 1; // Similar a diagnóstico
-      if (currentStatus === 'Listo') activeIndex = 3; // Alias
-      if (activeIndex === -1 && (currentStatus === 'Cancelada' || currentStatus === 'Devuelto (No Reparado)')) activeIndex = 0; // Si falla, mostrar inicio
+      if (currentStatus === 'Pendiente Repuesto') activeIndex = 1;
+      if (currentStatus === 'Listo') activeIndex = 3;
+      if (activeIndex === -1 && (currentStatus === 'Cancelada' || currentStatus === 'Devuelto (No Reparado)')) activeIndex = 0;
 
       return (
           <div className="flex items-center justify-between w-full px-2 mt-4 mb-6 relative">
-              {/* Línea de fondo gris */}
               <div className="absolute top-1/2 left-0 w-full h-1 bg-gray-200 -z-0 -translate-y-1/2 rounded-full"></div>
-              
-              {/* Línea de progreso verde (Calculada por ancho) */}
               <div 
                   className="absolute top-1/2 left-0 h-1 bg-emerald-500 -z-0 -translate-y-1/2 rounded-full transition-all duration-1000"
                   style={{ width: `${(activeIndex / (steps.length - 1)) * 100}%` }}
@@ -82,15 +81,13 @@ export default function TrackPageFriendly() {
                           `}>
                               {isCompleted ? <Check className="w-4 h-4" strokeWidth={3} /> : <div className="w-2 h-2 bg-gray-200 rounded-full"></div>}
                           </div>
-                          
-                          {/* Tooltip con nombre del paso (Solo en Desktop o si es el actual) */}
                           <span className={`
                               absolute -bottom-8 text-[9px] font-bold uppercase tracking-wider text-center w-20
                               ${isCompleted ? 'text-emerald-600' : 'text-gray-400'}
                               ${isCurrent ? 'opacity-100 scale-110' : 'opacity-0 md:opacity-100'}
                               transition-all
                           `}>
-                              {step.replace(' para Entregar', '')} {/* Acortamos texto visualmente */}
+                              {step.replace(' para Entregar', '')}
                           </span>
                       </div>
                   );
@@ -111,14 +108,28 @@ export default function TrackPageFriendly() {
     return list.length > 0 ? list.join(', ') : 'Ninguno';
   }
 
+  const getStatusProgress = (status) => {
+    const map = { 'Recibido': 10, 'Diagnóstico': 30, 'Pendiente Repuesto': 50, 'En Reparación': 70, 'Listo para Entregar': 90, 'Entregado': 100, 'Cancelada': 100, 'Devuelto (No Reparado)': 100 };
+    return map[status] || 10;
+  };
+
+  const getStatusColor = (status) => {
+      if (status === 'Listo para Entregar' || status === 'Entregado') return 'bg-emerald-500';
+      if (status === 'Cancelada' || status === 'Devuelto (No Reparado)') return 'bg-red-500';
+      return 'bg-violet-600'; 
+  };
+
   return (
-    // FONDO MORADO VIBRANTE
     <div className="min-h-screen bg-gradient-to-br from-indigo-700 via-purple-700 to-fuchsia-700 flex flex-col items-center justify-center p-4 font-sans pb-24">
       
-      {/* HEADER APP */}
+      {/* HEADER APP - AHORA MUESTRA EL NOMBRE DEL TALLER SI EXISTE */}
       <div className="mb-8 text-center">
-         <h1 className="text-4xl font-black text-white tracking-tighter mb-1 drop-shadow-lg">TallerControl</h1>
-         <p className="text-purple-200 font-medium tracking-widest uppercase text-xs opacity-80">Plataforma de Rastreo</p>
+         <h1 className="text-4xl font-black text-white tracking-tighter mb-1 drop-shadow-lg">
+             {shopName ? shopName : 'TallerControl'}
+         </h1>
+         <p className="text-purple-200 font-medium tracking-widest uppercase text-xs opacity-80">
+             {shopName ? 'Sistema de Rastreo' : 'Plataforma de Rastreo'}
+         </p>
       </div>
 
       {/* --- BÚSQUEDA --- */}
@@ -152,8 +163,7 @@ export default function TrackPageFriendly() {
       {order && (
         <div className="relative w-full max-w-md group animate-fade-in-up">
            
-           {/* 1. LUCES GIRATORIAS (COLORES NEON ALTO CONTRASTE) */}
-           {/* p-[6px] hace el borde más grueso */}
+           {/* LUCES GIRATORIAS */}
            <div className="absolute -inset-[6px] rounded-[2.5rem] overflow-hidden">
                <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_0deg,#FFFF00_90deg,transparent_180deg,#00FFFF_270deg,#FFFFFF_360deg)] animate-border-spin opacity-100"></div>
            </div>
@@ -161,11 +171,13 @@ export default function TrackPageFriendly() {
            {/* FONDO TARJETA */}
            <div className="relative bg-white w-full h-full rounded-[2.2rem] overflow-hidden shadow-2xl">
               
-              {/* ENCABEZADO TALLER */}
+              {/* ENCABEZADO CON NOMBRE DEL TALLER */}
               <div className="bg-slate-900 p-4 text-center border-b border-slate-800">
                   <div className="inline-flex items-center gap-2 text-white/90">
                       <Store className="w-4 h-4 text-yellow-400" />
-                      <span className="font-bold text-sm tracking-wide uppercase">{shopName || 'Servicio Técnico'}</span>
+                      <span className="font-bold text-sm tracking-wide uppercase">
+                          {shopName || 'SERVICIO TÉCNICO'}
+                      </span>
                   </div>
               </div>
 
@@ -173,7 +185,7 @@ export default function TrackPageFriendly() {
               <div className="bg-slate-50 p-6 pb-8 border-b border-gray-100 text-center">
                   <h2 className="text-2xl font-black text-slate-800 mb-6">{order.status}</h2>
                   {renderStepper(order.status)}
-                  <div className="h-4"></div> {/* Espacio para etiquetas */}
+                  <div className="h-4"></div>
               </div>
 
               {/* INFO CLIENTE */}
@@ -203,7 +215,8 @@ export default function TrackPageFriendly() {
                       <div className="flex-1 bg-indigo-50 p-4 rounded-2xl border border-indigo-100">
                           <Smartphone className="w-5 h-5 text-indigo-500 mb-2" />
                           <p className="text-[10px] font-bold text-indigo-400 uppercase">Equipo</p>
-                          <p className="font-bold text-gray-800 text-sm">{order.device?.model}</p>
+                          <p className="font-bold text-gray-800 text-sm">{order.device?.brand}</p>
+                          <p className="text-xs text-gray-500">{order.device?.model}</p>
                       </div>
                       <div className="flex-1 bg-amber-50 p-4 rounded-2xl border border-amber-100">
                           <AlertTriangle className="w-5 h-5 text-amber-500 mb-2" />
@@ -273,7 +286,7 @@ export default function TrackPageFriendly() {
           </div>
       )}
 
-      {/* ESTILOS GLOBALES ANIMACIONES */}
+      {/* ESTILOS CSS EXTRA (Animación de rotación) */}
       <style jsx global>{`
         @keyframes border-spin {
             from { transform: rotate(0deg); }
