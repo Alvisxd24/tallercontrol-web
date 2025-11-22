@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, Smartphone, Zap, User, Camera, X, Phone, Hash, FileText, Package, AlertTriangle, Check, Store } from "lucide-react"
+import { Search, Smartphone, Zap, User, Camera, X, Phone, Hash, FileText, Package, AlertTriangle, Check, Store, Calendar, Clock } from "lucide-react"
 import { createClient } from '@supabase/supabase-js'
 
 // --- CONFIGURACIÓN SUPABASE ---
@@ -10,7 +10,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export default function TrackPageFriendly() {
   const [query, setQuery] = useState('')
   const [order, setOrder] = useState(null)
-  const [shopName, setShopName] = useState('') // Nombre del taller específico
+  const [shopName, setShopName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [selectedPhoto, setSelectedPhoto] = useState(null)
@@ -35,14 +35,12 @@ export default function TrackPageFriendly() {
           setError("Ups, no encontramos esa orden.");
       } else {
           setOrder(data);
-          // --- BUSCAR NOMBRE DEL TALLER ---
           if (data.user_id) {
               const { data: settingsData } = await supabase
                   .from('settings')
                   .select('shopName')
                   .eq('user_id', data.user_id)
                   .single();
-              
               if (settingsData && settingsData.shopName) {
                   setShopName(settingsData.shopName);
               }
@@ -51,10 +49,16 @@ export default function TrackPageFriendly() {
     } catch (err) { setError("Error de conexión."); } finally { setLoading(false); }
   };
 
-  // --- HELPER: BARRA DE PROGRESO (CHECKLIST) ---
+  // --- HELPERS ---
+  const formatDate = (dateString) => {
+    if (!dateString) return null;
+    return new Date(dateString).toLocaleDateString('es-VE', {
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true
+    });
+  };
+
   const renderStepper = (currentStatus) => {
       const steps = ['Recibido', 'Diagnóstico', 'En Reparación', 'Listo para Entregar', 'Entregado'];
-      
       let activeIndex = steps.indexOf(currentStatus);
       if (currentStatus === 'Pendiente Repuesto') activeIndex = 1;
       if (currentStatus === 'Listo') activeIndex = 3;
@@ -122,13 +126,13 @@ export default function TrackPageFriendly() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-700 via-purple-700 to-fuchsia-700 flex flex-col items-center justify-center p-4 font-sans pb-24">
       
-      {/* HEADER APP: SIEMPRE DICE "TALLERCONTROL" */}
+      {/* HEADER APP */}
       <div className="mb-8 text-center">
          <h1 className="text-4xl font-black text-white tracking-tighter mb-1 drop-shadow-lg">
-             TallerControl
+             {shopName ? shopName : 'TallerControl'}
          </h1>
          <p className="text-purple-200 font-medium tracking-widest uppercase text-xs opacity-80">
-             Plataforma de Rastreo
+             {shopName ? 'Sistema de Rastreo' : 'Plataforma de Rastreo'}
          </p>
       </div>
 
@@ -171,7 +175,7 @@ export default function TrackPageFriendly() {
            {/* FONDO TARJETA */}
            <div className="relative bg-white w-full h-full rounded-[2.2rem] overflow-hidden shadow-2xl">
               
-              {/* ENCABEZADO CON NOMBRE DEL TALLER (NEGRO) */}
+              {/* ENCABEZADO TALLER */}
               <div className="bg-slate-900 p-4 text-center border-b border-slate-800">
                   <div className="inline-flex items-center gap-2 text-white/90">
                       <Store className="w-4 h-4 text-yellow-400" />
@@ -209,8 +213,8 @@ export default function TrackPageFriendly() {
                  </div>
               </div>
 
-              {/* DETALLES */}
               <div className="p-6 space-y-5">
+                  {/* EQUIPO Y FALLA */}
                   <div className="flex gap-3">
                       <div className="flex-1 bg-indigo-50 p-4 rounded-2xl border border-indigo-100">
                           <Smartphone className="w-5 h-5 text-indigo-500 mb-2" />
@@ -222,6 +226,36 @@ export default function TrackPageFriendly() {
                           <AlertTriangle className="w-5 h-5 text-amber-500 mb-2" />
                           <p className="text-[10px] font-bold text-amber-600 uppercase">Falla</p>
                           <p className="font-bold text-gray-800 text-xs leading-tight line-clamp-2">"{order.problemDescription}"</p>
+                      </div>
+                  </div>
+
+                  {/* --- NUEVA SECCIÓN: FECHAS --- */}
+                  <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex justify-between items-center">
+                      <div className="flex flex-col">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase mb-1 flex items-center gap-1">
+                              <Calendar className="w-3 h-3" /> Recepción
+                          </p>
+                          <p className="text-xs font-bold text-gray-700">
+                              {formatDate(order.createdAt)}
+                          </p>
+                      </div>
+                      
+                      {/* Separador Vertical */}
+                      <div className="w-px h-8 bg-gray-200"></div>
+
+                      <div className="flex flex-col text-right">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase mb-1 flex items-center gap-1 justify-end">
+                              Entrega <Clock className="w-3 h-3" />
+                          </p>
+                          {order.delivered_at ? (
+                              <p className="text-xs font-bold text-emerald-600">
+                                  {formatDate(order.delivered_at)}
+                              </p>
+                          ) : (
+                              <p className="text-xs font-bold text-indigo-400 italic">
+                                  En proceso...
+                              </p>
+                          )}
                       </div>
                   </div>
 
@@ -286,14 +320,14 @@ export default function TrackPageFriendly() {
           </div>
       )}
 
-      {/* ESTILOS CSS EXTRA (Animación de rotación) */}
+      {/* ESTILOS CSS EXTRA */}
       <style jsx global>{`
         @keyframes border-spin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
         .animate-border-spin {
-            animation: border-spin 3s linear infinite; /* Más rápido (3s) para que se note más */
+            animation: border-spin 3s linear infinite; 
         }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
