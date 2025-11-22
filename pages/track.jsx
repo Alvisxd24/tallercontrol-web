@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, Smartphone, Zap, User, Camera, X, Phone, Hash, FileText, Package, AlertTriangle, Check, Store, Calendar, Clock } from "lucide-react"
+import { Search, Smartphone, User, Camera, X, Phone, Hash, FileText, Package, AlertTriangle, Check, Store, Calendar, Clock } from "lucide-react"
 import { createClient } from '@supabase/supabase-js'
 
 // --- CONFIGURACIÓN SUPABASE ---
@@ -126,13 +126,13 @@ export default function TrackPageFriendly() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-700 via-purple-700 to-fuchsia-700 flex flex-col items-center justify-center p-4 font-sans pb-24">
       
-      {/* HEADER APP */}
+      {/* HEADER APP: SIEMPRE DICE "TALLERCONTROL" */}
       <div className="mb-8 text-center">
          <h1 className="text-4xl font-black text-white tracking-tighter mb-1 drop-shadow-lg">
-             {shopName ? shopName : 'TallerControl'}
+             TallerControl
          </h1>
          <p className="text-purple-200 font-medium tracking-widest uppercase text-xs opacity-80">
-             {shopName ? 'Sistema de Rastreo' : 'Plataforma de Rastreo'}
+             Plataforma de Rastreo
          </p>
       </div>
 
@@ -175,7 +175,7 @@ export default function TrackPageFriendly() {
            {/* FONDO TARJETA */}
            <div className="relative bg-white w-full h-full rounded-[2.2rem] overflow-hidden shadow-2xl">
               
-              {/* ENCABEZADO TALLER */}
+              {/* ENCABEZADO CON NOMBRE DEL TALLER (NEGRO) */}
               <div className="bg-slate-900 p-4 text-center border-b border-slate-800">
                   <div className="inline-flex items-center gap-2 text-white/90">
                       <Store className="w-4 h-4 text-yellow-400" />
@@ -213,6 +213,7 @@ export default function TrackPageFriendly() {
                  </div>
               </div>
 
+              {/* DETALLES */}
               <div className="p-6 space-y-5">
                   {/* EQUIPO Y FALLA */}
                   <div className="flex gap-3">
@@ -229,7 +230,7 @@ export default function TrackPageFriendly() {
                       </div>
                   </div>
 
-                  {/* --- NUEVA SECCIÓN: FECHAS --- */}
+                  {/* --- NUEVA SECCIÓN: FECHAS (INGRESO + ENTREGA) --- */}
                   <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex justify-between items-center">
                       <div className="flex flex-col">
                           <p className="text-[10px] font-bold text-gray-400 uppercase mb-1 flex items-center gap-1">
@@ -248,7 +249,7 @@ export default function TrackPageFriendly() {
                               Entrega <Clock className="w-3 h-3" />
                           </p>
                           {order.delivered_at ? (
-                              <p className="text-xs font-bold text-emerald-600">
+                              <p className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
                                   {formatDate(order.delivered_at)}
                               </p>
                           ) : (
@@ -320,7 +321,7 @@ export default function TrackPageFriendly() {
           </div>
       )}
 
-      {/* ESTILOS CSS EXTRA */}
+      {/* ESTILOS CSS EXTRA (Animación de rotación) */}
       <style jsx global>{`
         @keyframes border-spin {
             from { transform: rotate(0deg); }
