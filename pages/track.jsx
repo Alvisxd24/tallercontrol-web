@@ -10,7 +10,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export default function TrackPageFriendly() {
   const [query, setQuery] = useState('')
   const [order, setOrder] = useState(null)
-  const [shopName, setShopName] = useState('') // Nombre del taller
+  const [shopName, setShopName] = useState('') // Nombre del taller específico
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [selectedPhoto, setSelectedPhoto] = useState(null)
@@ -39,7 +39,7 @@ export default function TrackPageFriendly() {
           if (data.user_id) {
               const { data: settingsData } = await supabase
                   .from('settings')
-                  .select('shopName') // Solo traemos el nombre
+                  .select('shopName')
                   .eq('user_id', data.user_id)
                   .single();
               
@@ -122,13 +122,13 @@ export default function TrackPageFriendly() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-700 via-purple-700 to-fuchsia-700 flex flex-col items-center justify-center p-4 font-sans pb-24">
       
-      {/* HEADER APP - AHORA MUESTRA EL NOMBRE DEL TALLER SI EXISTE */}
+      {/* HEADER APP: SIEMPRE DICE "TALLERCONTROL" */}
       <div className="mb-8 text-center">
          <h1 className="text-4xl font-black text-white tracking-tighter mb-1 drop-shadow-lg">
-             {shopName ? shopName : 'TallerControl'}
+             TallerControl
          </h1>
          <p className="text-purple-200 font-medium tracking-widest uppercase text-xs opacity-80">
-             {shopName ? 'Sistema de Rastreo' : 'Plataforma de Rastreo'}
+             Plataforma de Rastreo
          </p>
       </div>
 
@@ -171,7 +171,7 @@ export default function TrackPageFriendly() {
            {/* FONDO TARJETA */}
            <div className="relative bg-white w-full h-full rounded-[2.2rem] overflow-hidden shadow-2xl">
               
-              {/* ENCABEZADO CON NOMBRE DEL TALLER */}
+              {/* ENCABEZADO CON NOMBRE DEL TALLER (NEGRO) */}
               <div className="bg-slate-900 p-4 text-center border-b border-slate-800">
                   <div className="inline-flex items-center gap-2 text-white/90">
                       <Store className="w-4 h-4 text-yellow-400" />
